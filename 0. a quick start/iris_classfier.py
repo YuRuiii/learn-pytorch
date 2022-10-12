@@ -33,7 +33,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train_raw, y_test = train_test_split(iris.data, iris.target, random_state=104, test_size=0.25, shuffle=True)
     y_train = []
     for _, y in enumerate(y_train_raw):
-        y_train.append({0: [0, 0, 1], 1: [0, 1, 0], 2: [1, 0, 0]}[y]) # encode it to be one-hot
+        y_train.append({0: [1, 0, 0], 1: [0, 1, 0], 2: [0, 0, 1]}[y]) # encode it to be one-hot
 
     tensor_x = torch.Tensor(X_train) # create dataset in numpy: 1. transform it to tensor type; 2. use TensorDataset to transform it to dataset type
     tensor_y = torch.Tensor(y_train)
@@ -47,6 +47,7 @@ if __name__ == "__main__":
     model = TypoNetwork()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
     # train
 
     for _, (X, y) in tqdm(enumerate(train_dataloader)):
@@ -60,8 +61,10 @@ if __name__ == "__main__":
 
     # test
     correct, total = 0, 0
-    with torch.no_grad(): # is "torch.no_grad", means no need to calculate & save grad in the whole graph
+    with torch.no_grad(): # means no need to calculate & save grad in the whole graph
         for X, y in tqdm(test_dataloader):
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            pred = model(X)
+            print(X, y, pred, torch.argmax(pred))
+            correct += 1 if torch.argmax(pred) == y else 0
             total += 1
     print("prediction correct rate:", '%.3f'%(correct/total))

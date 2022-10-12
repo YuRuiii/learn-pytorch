@@ -15,3 +15,8 @@
     - lr decay: `torch.optim.lr_scheduler` provide methods for dynamic lr reducing. Lr scheduling should be applied after optimizer's update.
 - Save and load model: by its state dict
 - `with torch.no_grad()`: no need to calculate gradient. 1. when you only need to process forward propagation process, it's like detach all nodes in a model (graph) then run an epoch 2. when you don't want backward propagation to influence the nodes before a, detach it. (like in moba, we don't want gd to influence hero classifier): `torch.nn.functional.mse(a.detach(),b)`
+- about optimizers
+  - SGD: Stochastic gradient descent
+    - when we use GD in big data, it costs a lot. but if you randomly choose one or a mini-batch of samples to do GD, it will cost little. Also, if you want to add samples, just use it to do another SGD iteration, which is vert convenient.
+  - Adam: ADAptive Moment estimation
+  - 
