@@ -1,7 +1,3 @@
-from enum import EnumMeta
-import enum
-from pickletools import optimize
-from turtle import forward
 import torch
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -24,7 +20,7 @@ class TypoNetwork(nn.Module):
         self.linear3 = nn.Linear(10, 3)
         self.tanh = nn.Tanh()
         self.softmax = nn.Softmax(-1)
-        
+
     def forward(self, x):
         # print("forward", x)
         x = self.linear1(x)
@@ -45,19 +41,20 @@ def get_data():
     tensor_x = torch.Tensor(X_train) # create dataset in numpy: 1. transform it to tensor type; 2. use TensorDataset to transform it to dataset type
     tensor_y = torch.Tensor(y_train)
     train_dataset = TensorDataset(tensor_x,tensor_y)
-    train_dataloader = DataLoader(train_dataset,batch_size=16)
+    train_dataloader = DataLoader(train_dataset,batch_size=16, shuffle=True)
     tensor_x = torch.Tensor(X_test)
     tensor_y = torch.Tensor(y_test)
     test_dataset = TensorDataset(tensor_x,tensor_y)
     test_dataloader = DataLoader(test_dataset)
     return train_dataset, test_dataset, train_dataloader, test_dataloader
 
-def train(train_dataloader, model, loss_fn, optimizer):
-    model.train()
+def train(train_dataloader, test_dataloader, model, loss_fn, optimizer):
+    # model.train()
     writer = SummaryWriter("./log")
     total_step = 0
-    for epoch in range(100):
-        for _, (X, y) in tqdm(enumerate(train_dataloader)):
+    for epoch in tqdm(range(100)):
+        model.train()
+        for _, (X, y) in enumerate(train_dataloader):
             total_step += 1
             pred = model(X)
             loss = loss_fn(pred, y)
@@ -66,21 +63,26 @@ def train(train_dataloader, model, loss_fn, optimizer):
             loss.backward()
             optimizer.step()
 
+        cr = test(test_dataloader, model)
+        writer.add_scalar('Correct_Rate', cr, total_step)
+
 def test(test_dataloader, model):
     model.eval()
     correct, total = 0, 0
     with torch.no_grad(): # means no need to calculate & save grad in the whole graph
-        for X, y in tqdm(test_dataloader):
+        for X, y in test_dataloader:
             pred = model(X)
             # print(list(X), list(pred), int(y), int(torch.argmax(pred)))
             correct += 1 if torch.argmax(pred) == y else 0
             total += 1
-    print("prediction correct rate:", '%.3f'%(correct/total))
+    return correct/total
+    # return '%.3f'%(correct/total)
+    # print("prediction correct rate:", '%.3f'%(correct/total))
     
 if __name__ == "__main__":
     train_dataset, test_dataset, train_dataloader, test_dataloader = get_data()
     model = TypoNetwork()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    train(train_dataloader, model, loss_fn, optimizer)
-    test(test_dataloader, model)
+    train(train_dataloader, test_dataloader, model, loss_fn, optimizer)
+    # test(test_dataloader, model)
